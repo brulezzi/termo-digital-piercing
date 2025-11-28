@@ -6,9 +6,10 @@ import { Pen, RotateCcw, Check } from "lucide-react"
 type SignaturePageProps = {
   updateFormData: (data: { signature: string; signatureDate: string }) => void
   onNext: () => void
+  saveError?: string | null
 }
 
-export function SignaturePage({ updateFormData, onNext }: SignaturePageProps) {
+export function SignaturePage({ updateFormData, onNext, saveError }: SignaturePageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [hasSignature, setHasSignature] = useState(false)
@@ -156,6 +157,12 @@ export function SignaturePage({ updateFormData, onNext }: SignaturePageProps) {
           {error && (
             <div className="flex items-center gap-2 text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg p-4">
               <span className="text-sm">{error}</span>
+            </div>
+          )}
+
+          {saveError && (
+            <div className="flex items-center gap-2 text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 rounded-lg p-4">
+              <span className="text-sm">{saveError}</span>
             </div>
           )}
 

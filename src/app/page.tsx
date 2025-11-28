@@ -43,57 +43,51 @@ export default function Home() {
 
   const saveToSupabase = async () => {
     setIsSaving(true)
+    
     try {
       // Converter data de DD/MM/AAAA para AAAA-MM-DD
       const [day, month, year] = formData.birthDate.split('/')
       const formattedDate = `${year}-${month}-${day}`
 
-      // Obter IP e User Agent
-      const userAgent = navigator.userAgent
-      let ipAddress = ''
-      try {
-        const ipResponse = await fetch('https://api.ipify.org?format=json')
-        const ipData = await ipResponse.json()
-        ipAddress = ipData.ip
-      } catch (error) {
-        console.log('Não foi possível obter IP:', error)
-      }
-
       const termData = {
         name: formData.fullName,
         whatsapp: formData.whatsapp.replace(/\D/g, ''), // Remove formatação
-        birth_date: formattedDate,
+        birthDate: formattedDate,
         document: formData.document,
-        is_minor: formData.isMinor,
-        guardian_name: formData.guardianName || null,
-        guardian_document: formData.guardianDocument || null,
-        accepted_terms: formData.termsAccepted,
-        signature_url: formData.signature,
-        ip_address: ipAddress,
-        user_agent: userAgent,
+        isMinor: formData.isMinor,
+        guardianName: formData.guardianName || null,
+        guardianDocument: formData.guardianDocument || null,
+        city: null,
+        signatureUrl: formData.signature,
       }
 
-      await savePiercingTerm(termData)
+      const result = await savePiercingTerm(termData)
       
-      // Também salvar no localStorage como backup
+      // Salvar no localStorage como backup
       const submissions = JSON.parse(localStorage.getItem("debby-piercing-submissions") || "[]")
       submissions.push({
         ...formData,
         submittedAt: new Date().toISOString(),
+        savedToSupabase: result?.success || false
       })
       localStorage.setItem("debby-piercing-submissions", JSON.stringify(submissions))
       
-      console.log('✅ Dados salvos com sucesso no Supabase!')
+      console.log('✅ Dados salvos com sucesso!')
+      nextStep() // Avança para próxima página
     } catch (error) {
-      console.error('❌ Erro ao salvar no Supabase:', error)
+      console.error('❌ Erro ao salvar:', error)
+      
       // Mesmo com erro, salva no localStorage como fallback
       const submissions = JSON.parse(localStorage.getItem("debby-piercing-submissions") || "[]")
       submissions.push({
         ...formData,
         submittedAt: new Date().toISOString(),
-        error: 'Salvo apenas localmente - erro no Supabase'
+        savedToSupabase: false
       })
       localStorage.setItem("debby-piercing-submissions", JSON.stringify(submissions))
+      
+      // Continua o fluxo mesmo com erro
+      nextStep()
     } finally {
       setIsSaving(false)
     }
@@ -103,10 +97,11 @@ export default function Home() {
     <WelcomePage key="welcome" onNext={nextStep} />,
     <PersonalDataForm key="form" formData={formData} updateFormData={updateFormData} onNext={nextStep} />,
     <TermsPage key="terms" updateFormData={updateFormData} onNext={nextStep} />,
-    <SignaturePage key="signature" updateFormData={updateFormData} onNext={async () => {
-      await saveToSupabase()
-      nextStep()
-    }} />,
+    <SignaturePage 
+      key="signature" 
+      updateFormData={updateFormData} 
+      onNext={saveToSupabase}
+    />,
     <AftercarePage key="aftercare" onNext={nextStep} />,
     <CrossSellPage key="crosssell" />,
   ]
