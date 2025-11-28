@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Criar cliente apenas se as credenciais existirem
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
 
 export type PiercingTermData = {
   name: string
@@ -22,6 +25,12 @@ export type PiercingTermData = {
 }
 
 export async function savePiercingTerm(data: PiercingTermData) {
+  // Se não houver cliente Supabase configurado, retornar erro amigável
+  if (!supabase) {
+    console.warn('⚠️ Supabase não configurado - dados salvos apenas localmente')
+    throw new Error('Supabase não configurado')
+  }
+
   const { data: result, error } = await supabase
     .from('piercing_terms')
     .insert([data])
